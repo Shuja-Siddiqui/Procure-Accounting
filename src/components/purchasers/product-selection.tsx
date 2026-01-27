@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface Product {
   id: string;
@@ -46,7 +47,7 @@ export function ProductSelection({ selectedProducts, onProductsChange, disabled 
   }>({
     queryKey: ['/api/products'],
     queryFn: async () => {
-      const response = await fetch('/api/products', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/products'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface TransactionBookModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export function TransactionBookModal({
     queryKey: ["/api/transactions", transactionId, "relations"],
     queryFn: async () => {
       if (!transactionId) return null;
-      const res = await fetch(`/api/transactions/${transactionId}/relations`, {
+      const res = await fetch(getApiUrl(`/api/transactions/${transactionId}/relations`), {
         credentials: "include",
       });
       if (!res.ok) {

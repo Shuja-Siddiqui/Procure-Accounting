@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, CreditCard, PlusCircle, Receipt, ChevronDown } from "lucide-react";
@@ -85,7 +85,7 @@ export default function DailyBookReceipts() {
       params.append('page', String(page));
       params.append('limit', String(pageSize));
       
-      const res = await fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' });
+      const res = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch receipt transactions');
       const data = await res.json();
       

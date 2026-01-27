@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountPayable {
   id: string;
@@ -58,7 +59,7 @@ export function AccountPayableSelection({ selectedAccountPayables, onAccountPaya
       // Fetch accountPayables for each product and combine them with product info
       const accountPayablePromises = selectedProducts.map(async (product) => {
         console.log(`Fetching accountPayables for product: ${product.name} (${product.id})`);
-        const response = await fetch(`/api/account-payable-products/product/${product.id}`, { 
+        const response = await fetch(getApiUrl(`/api/account-payable-products/product/${product.id}`), { 
           credentials: 'include' 
         });
         if (!response.ok) {

@@ -5,6 +5,7 @@ import { Printer } from "lucide-react";
 import { AccountReceivableLedgerFilters, LedgerFilterValues } from "../components/account-reports/accountreceavbleledger/filters";
 import { AccountReceivableLedgerTable, LedgerTransaction } from "../components/account-reports/accountreceavbleledger/ledger-table";
 import { TransactionBookModal } from "../components/account-reports/accountreceavbleledger/transaction-book-modal";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface LedgerResponse {
   openingBalance: number;
@@ -31,7 +32,7 @@ export default function AccountReceivableLedger() {
     queryKey: ["/api/account-receivables", filters?.account_receivable_id],
     queryFn: async () => {
       if (!filters?.account_receivable_id) return null;
-      const response = await fetch(`/api/account-receivables/${filters.account_receivable_id}`, {
+      const response = await fetch(getApiUrl(`/api/account-receivables/${filters.account_receivable_id}`), {
         credentials: "include",
       });
       if (!response.ok) {
@@ -57,7 +58,7 @@ export default function AccountReceivableLedger() {
         date_from: filters.date_from,
         date_to: filters.date_to,
       });
-      const resMain = await fetch(`/api/transactions?${params.toString()}`, {
+      const resMain = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), {
         credentials: "include",
       });
       if (!resMain.ok) {
@@ -84,7 +85,7 @@ export default function AccountReceivableLedger() {
       const paramsAll = new URLSearchParams({
         account_receivable_id: filters.account_receivable_id,
       });
-      const resAll = await fetch(`/api/transactions?${paramsAll.toString()}`, {
+      const resAll = await fetch(getApiUrl(`/api/transactions?${paramsAll.toString()}`), {
         credentials: "include",
       });
       if (!resAll.ok) {
@@ -104,7 +105,7 @@ export default function AccountReceivableLedger() {
       });
 
       // Fetch account receivable to get initial_balance
-      const resAR = await fetch(`/api/account-receivables/${filters.account_receivable_id}`, {
+      const resAR = await fetch(getApiUrl(`/api/account-receivables/${filters.account_receivable_id}`), {
         credentials: "include",
       });
       let initialBalance = 0;

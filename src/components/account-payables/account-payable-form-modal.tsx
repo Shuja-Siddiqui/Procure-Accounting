@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { insertAccountPayableSchema, type InsertAccountPayable, type AccountPayable } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import { ProductSelection } from "./product-selection";
@@ -81,7 +81,7 @@ export function AccountPayableFormModal({ isOpen, onClose, mode, accountPayable,
   }>({
     queryKey: ['/api/account-payable-products/account-payable', accountPayable?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/account-payable-products/account-payable/${accountPayable?.id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-payable-products/account-payable/${accountPayable?.id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch account payable products');
       }
@@ -97,7 +97,7 @@ export function AccountPayableFormModal({ isOpen, onClose, mode, accountPayable,
   }>({
     queryKey: ['/api/purchaser-account-payables/account-payable', accountPayable?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-account-payables/account-payable/${accountPayable?.id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-account-payables/account-payable/${accountPayable?.id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch account payable purchasers');
       }
@@ -213,7 +213,7 @@ export function AccountPayableFormModal({ isOpen, onClose, mode, accountPayable,
       // Then handle product relationships
       if (accountPayable?.id) {
         // Get current account payable products
-        const currentProductsResponse = await fetch(`/api/account-payable-products/account-payable/${accountPayable.id}`, { credentials: 'include' });
+        const currentProductsResponse = await fetch(getApiUrl(`/api/account-payable-products/account-payable/${accountPayable.id}`), { credentials: 'include' });
         const currentProducts = currentProductsResponse.ok ? await currentProductsResponse.json() : { data: [] };
         const currentProductIds = currentProducts.data?.map((p: Product) => p.id) || [];
         
@@ -244,7 +244,7 @@ export function AccountPayableFormModal({ isOpen, onClose, mode, accountPayable,
       // Handle purchaser relationships
       if (accountPayable?.id) {
         // Get current account payable purchasers
-        const currentPurchasersResponse = await fetch(`/api/purchaser-account-payables/account-payable/${accountPayable.id}`, { credentials: 'include' });
+        const currentPurchasersResponse = await fetch(getApiUrl(`/api/purchaser-account-payables/account-payable/${accountPayable.id}`), { credentials: 'include' });
         const currentPurchasers = currentPurchasersResponse.ok ? await currentPurchasersResponse.json() : { data: [] };
         const currentPurchaserIds = currentPurchasers.data?.map((p: Purchaser) => p.id) || [];
         

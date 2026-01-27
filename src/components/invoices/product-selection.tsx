@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getApiUrl } from "@/lib/queryClient";
 import { Check, ChevronsUpDown, Plus, Trash2, Package, DollarSign } from "lucide-react";
 
 interface Product {
@@ -50,7 +51,7 @@ export function ProductSelection({ selectedProducts, onProductsChange, disabled 
   }>({
     queryKey: ['/api/products'],
     queryFn: async () => {
-      const response = await fetch('/api/products', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/products'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

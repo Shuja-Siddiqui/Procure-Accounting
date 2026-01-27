@@ -24,6 +24,7 @@ import {
 import { Edit, Trash2, AlertTriangle, Eye, MoreHorizontal } from "lucide-react";
 import type { Product } from "@shared/schema";
 import { useAuth } from "@/contexts/auth-context";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface ProductFilters {
   search?: string;
@@ -57,7 +58,7 @@ export function ProductsTable({ products, isLoading, onEdit, onDelete, onView, f
   }>({
     queryKey: ['/api/companies'],
     queryFn: async () => {
-      const response = await fetch('/api/companies', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/companies'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch companies');
       }

@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Edit, Phone, MapPin, ShoppingCart, Calendar, User, Package, Trash2, Plus, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { PurchaserFormModal } from "@/components/purchasers/purchaser-form-modal";
 import { PurchaserDeleteModal } from "@/components/purchasers/purchaser-delete-modal";
 import {
@@ -82,7 +82,7 @@ export default function PurchaserDetailPage() {
   }>({
     queryKey: ['/api/purchasers', purchaserId],
     queryFn: async () => {
-      const response = await fetch(`/api/purchasers/${purchaserId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchasers/${purchaserId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -98,7 +98,7 @@ export default function PurchaserDetailPage() {
   }>({
     queryKey: ['/api/purchaser-products/purchaser', purchaserId],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-products/purchaser/${purchaserId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-products/purchaser/${purchaserId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -117,7 +117,7 @@ export default function PurchaserDetailPage() {
   }>({
     queryKey: ['/api/purchaser-account-payables/purchaser', purchaserId],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-account-payables/purchaser/${purchaserId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-account-payables/purchaser/${purchaserId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

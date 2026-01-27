@@ -15,7 +15,7 @@ import { ReceivablePrintModal } from "@/components/dailybooks/sale/receivable-pr
 import { AccountReceivableFormModal } from "@/components/account-receivables/account-receivable-form-modal";
 import { AccountReceivableDeleteModal } from "@/components/account-receivables/account-receivable-delete-modal";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 
 interface AccountReceivable {
   id: string;
@@ -51,7 +51,7 @@ export default function AccountReceivableDetailPage() {
   }>({
     queryKey: ['/api/account-receivables', accountReceivableId],
     queryFn: async () => {
-      const response = await fetch(`/api/account-receivables/${accountReceivableId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-receivables/${accountReceivableId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -74,7 +74,7 @@ export default function AccountReceivableDetailPage() {
       const params = new URLSearchParams();
       params.append('account_receivable_id', accountReceivableId!);
 
-      const response = await fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -124,7 +124,7 @@ export default function AccountReceivableDetailPage() {
       params.append('account_receivable_id', accountReceivableId!);
       params.append('type', 'sale');
 
-      const response = await fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

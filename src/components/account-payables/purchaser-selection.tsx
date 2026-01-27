@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface Purchaser {
   id: string;
@@ -41,7 +42,7 @@ export function PurchaserSelection({ selectedPurchasers, onPurchasersChange, dis
     queryFn: async () => {
       console.log('Fetching all purchasers');
       
-      const response = await fetch('/api/purchasers', {
+      const response = await fetch(getApiUrl('/api/purchasers'), {
         credentials: 'include'
       });
       

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Package, Hash, Calendar } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import type { Product } from "@shared/schema";
 
 interface Batch {
@@ -38,7 +38,7 @@ export default function ProductBatches() {
   }>({
     queryKey: ['/api/products', id],
     queryFn: async () => {
-      const response = await fetch(`/api/products/${id}`);
+      const response = await fetch(getApiUrl(`/api/products/${id}`));
       if (!response.ok) {
         throw new Error('Failed to fetch product');
       }

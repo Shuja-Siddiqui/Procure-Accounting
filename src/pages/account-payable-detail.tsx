@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { CopyableId } from "@/components/ui/copyable-id";
 import { AccountPayableDeleteModal } from "@/components/account-payables/account-payable-delete-modal";
 import { AccountPayableFormModal } from "@/components/account-payables/account-payable-form-modal";
@@ -117,7 +117,7 @@ export default function AccountPayableDetailPage() {
   }>({
     queryKey: ['/api/account-payables', accountPayableId],
     queryFn: async () => {
-      const response = await fetch(`/api/account-payables/${accountPayableId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-payables/${accountPayableId}`), { credentials: 'include' });
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('AccountPayable not found');
@@ -136,7 +136,7 @@ export default function AccountPayableDetailPage() {
   }>({
     queryKey: ['/api/account-payable-products/account-payable', accountPayableId],
     queryFn: async () => {
-      const response = await fetch(`/api/account-payable-products/account-payable/${accountPayableId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-payable-products/account-payable/${accountPayableId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -152,7 +152,7 @@ export default function AccountPayableDetailPage() {
   }>({
     queryKey: ['/api/purchaser-account-payables/account-payable', accountPayableId],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-account-payables/account-payable/${accountPayableId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-account-payables/account-payable/${accountPayableId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -173,7 +173,7 @@ export default function AccountPayableDetailPage() {
       const params = new URLSearchParams();
       params.append('account_payable_id', accountPayableId!);
 
-      const response = await fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -221,7 +221,7 @@ export default function AccountPayableDetailPage() {
       params.append('account_payable_id', accountPayableId!);
       params.append('type', 'purchase');
 
-      const response = await fetch(`/api/transactions?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { PurchaseModal } from "@/components/dailybooks/purchase/purchase-modal";
 import { PurchaseReturnModal } from "@/components/dailybooks/purchase/purchase-return-modal";
 import { PayablesTable } from "@/components/dailybooks/purchase/payables-table";
@@ -100,7 +100,7 @@ export default function DailyBookPurchaseInvoices() {
       params.append('page', String(page));
       params.append('limit', String(pageSize));
       
-      const url = `/api/transactions?${params.toString()}`;
+      const url = getApiUrl(`/api/transactions?${params.toString()}`);
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch purchase transactions');
       const data = await res.json();
@@ -152,7 +152,7 @@ export default function DailyBookPurchaseInvoices() {
       if (filters.date_from) params.append('date_from', filters.date_from);
       if (filters.date_to) params.append('date_to', filters.date_to);
       
-      const url = `/api/transactions?${params.toString()}`;
+      const url = getApiUrl(`/api/transactions?${params.toString()}`);
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch transaction stats');
       const data = await res.json();

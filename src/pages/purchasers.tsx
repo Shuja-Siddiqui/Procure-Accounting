@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ export default function PurchasersPage() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (cityFilter !== 'all') params.append('city', cityFilter);
       
-      const response = await fetch(`/api/purchasers?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchasers?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -69,7 +69,7 @@ export default function PurchasersPage() {
   }>({
     queryKey: ['/api/purchasers/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/purchasers/stats', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/purchasers/stats'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

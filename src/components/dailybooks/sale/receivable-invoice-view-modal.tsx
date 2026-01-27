@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, X } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface ReceivableProduct {
     id: string;
@@ -86,7 +87,7 @@ export function ReceivableInvoiceViewModal({
         queryFn: async () => {
             if (!receivableId) return null;
             // receivableId is actually transaction_id now
-            const res = await fetch(`/api/transactions/${receivableId}/relations`, { credentials: 'include' });
+            const res = await fetch(getApiUrl(`/api/transactions/${receivableId}/relations`), { credentials: 'include' });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Failed to fetch transaction');
@@ -102,7 +103,7 @@ export function ReceivableInvoiceViewModal({
             let accountReceivableDetails = null;
             if (tx.account_receivable_id) {
                 try {
-                    const arRes = await fetch(`/api/account-receivables/${tx.account_receivable_id}`, { credentials: 'include' });
+                    const arRes = await fetch(getApiUrl(`/api/account-receivables/${tx.account_receivable_id}`), { credentials: 'include' });
                     if (arRes.ok) {
                         const arData = await arRes.json();
                         accountReceivableDetails = arData.data;

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StatCard } from "@/components/dashboard-new/stat-card";
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Users, CreditCard } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountPayable {
   id: string;
@@ -28,7 +29,7 @@ export function FinancialSummaryCards() {
   }>({
     queryKey: ['/api/account-payables'],
     queryFn: async () => {
-      const response = await fetch('/api/account-payables', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-payables'), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch payables');
       return response.json();
     },
@@ -41,7 +42,7 @@ export function FinancialSummaryCards() {
   }>({
     queryKey: ['/api/account-receivables'],
     queryFn: async () => {
-      const response = await fetch('/api/account-receivables', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-receivables'), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch receivables');
       return response.json();
     },
@@ -59,7 +60,7 @@ export function FinancialSummaryCards() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch('/api/transactions?limit=10000', {
+      const response = await fetch(getApiUrl('/api/transactions?limit=10000'), {
         headers,
         credentials: 'include',
       });

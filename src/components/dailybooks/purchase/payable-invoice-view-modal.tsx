@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, X } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface PayableProduct {
     id: string;
@@ -83,7 +84,7 @@ export function PayableInvoiceViewModal({
         queryFn: async () => {
             if (!payableId) return null;
             // payableId is actually transaction_id now
-            const res = await fetch(`/api/transactions/${payableId}/relations`, { credentials: 'include' });
+            const res = await fetch(getApiUrl(`/api/transactions/${payableId}/relations`), { credentials: 'include' });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Failed to fetch transaction');

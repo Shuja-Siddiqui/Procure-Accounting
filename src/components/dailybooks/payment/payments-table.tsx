@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 
 interface PaymentTransaction {
   id: string;
@@ -107,7 +107,7 @@ export function PaymentsTable({ payments, isLoading, onView, onFiltersChange }: 
   const { data: accountPayablesResponse } = useQuery({
     queryKey: ['/api/account-payables'],
     queryFn: async () => {
-      const res = await fetch('/api/account-payables', { credentials: 'include' });
+      const res = await fetch(getApiUrl('/api/account-payables'), { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch account payables');
       return await res.json();
     },

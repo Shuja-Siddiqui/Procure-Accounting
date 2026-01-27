@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { SaleModal } from "@/components/dailybooks/sale/sale-modal";
 import { SaleReturnModal } from "@/components/dailybooks/sale/sale-return-modal";
 import { ReceivablesTable } from "@/components/dailybooks/sale/receivables-table";
@@ -102,7 +102,7 @@ export default function DailyBookSaleInvoices() {
       params.append('page', String(page));
       params.append('limit', String(pageSize));
       
-      const url = `/api/transactions?${params.toString()}`;
+      const url = getApiUrl(`/api/transactions?${params.toString()}`);
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch sale transactions');
       const data = await res.json();
@@ -160,7 +160,7 @@ export default function DailyBookSaleInvoices() {
       if (filters.date_to) params.append('date_to', filters.date_to);
       // Don't include search in stats - we want total stats, not filtered
       
-      const url = `/api/transactions?${params.toString()}`;
+      const url = getApiUrl(`/api/transactions?${params.toString()}`);
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch transaction stats');
       const data = await res.json();

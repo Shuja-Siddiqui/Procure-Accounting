@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { ProductsTable } from "@/components/products/products-table";
 import { ProductFormModal } from "@/components/products/product-form-modal";
 import { ProductDeleteModal } from "@/components/products/product-delete-modal";
+import { getApiUrl } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/auth-context";
 import type { Product } from "@shared/schema";
 
@@ -49,7 +50,7 @@ export default function Products() {
       if (filters.construction_category) params.append('construction_category', filters.construction_category);
       if (filters.available_only) params.append('available_only', 'true');
       
-      const response = await fetch(`/api/products?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/products?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }

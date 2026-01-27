@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface CompanySpendingData {
   companyName: string;
@@ -76,7 +77,7 @@ export function CompanySpendingProgress() {
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       
-      const response = await fetch(`/api/transactions?${params.toString()}`, {
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
@@ -97,7 +98,7 @@ export function CompanySpendingProgress() {
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       
-      const response = await fetch(`/api/transactions?${params.toString()}`, {
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });

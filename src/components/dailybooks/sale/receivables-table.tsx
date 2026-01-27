@@ -30,6 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface Receivable {
   id: string;
@@ -138,7 +139,7 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
   const { data: accountReceivablesResponse } = useQuery({
     queryKey: ['/api/account-receivables'],
     queryFn: async () => {
-      const res = await fetch('/api/account-receivables', { credentials: 'include' });
+      const res = await fetch(getApiUrl('/api/account-receivables'), { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch account receivables');
       return await res.json();
     },

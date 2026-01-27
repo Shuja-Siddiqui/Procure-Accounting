@@ -6,6 +6,7 @@ import { UsersTable } from "@/components/user-management/users-table";
 import { UserFormModal } from "@/components/user-management/user-form-modal";
 import { UserViewModal } from "@/components/user-management/user-view-modal";
 import { UserDeleteModal } from "@/components/user-management/user-delete-modal";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface User {
   id: string;
@@ -40,7 +41,7 @@ export default function UserManagement() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (roleFilter !== 'all') params.append('role', roleFilter);
 
-      const response = await fetch(`/api/users?${params.toString()}`, { 
+      const response = await fetch(getApiUrl(`/api/users?${params.toString()}`), { 
         credentials: 'include',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

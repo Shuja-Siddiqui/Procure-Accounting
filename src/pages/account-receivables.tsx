@@ -13,6 +13,7 @@ import { Plus, Search, Filter, Users, MapPin, Building2 } from "lucide-react";
 import { AccountReceivablesTable } from "@/components/account-receivables/account-receivables-table";
 import { AccountReceivableFormModal } from "@/components/account-receivables/account-receivable-form-modal";
 import { AccountReceivableDeleteModal } from "@/components/account-receivables/account-receivable-delete-modal";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountReceivable {
   id: string;
@@ -61,7 +62,7 @@ export default function AccountReceivablesPage() {
       if (cityFilter !== 'all') params.append('city', cityFilter);
       if (categoryFilter !== 'all') params.append('construction_category', categoryFilter);
 
-      const response = await fetch(`/api/account-receivables?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-receivables?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -76,7 +77,7 @@ export default function AccountReceivablesPage() {
   }>({
     queryKey: ['/api/account-receivables/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/account-receivables/stats', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-receivables/stats'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

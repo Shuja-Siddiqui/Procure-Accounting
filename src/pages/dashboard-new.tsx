@@ -4,6 +4,7 @@ import { CompanySpendingProgress } from "@/components/dashboard-new/company-spen
 import { LatestTransactions } from "@/components/dashboard-new/latest-transactions";
 import { FinancialSummaryCards } from "@/components/dashboard-new/financial-summary-cards";
 import { Coins, DollarSign, Package } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountStats {
   totalAccounts: number;
@@ -55,7 +56,7 @@ export default function DashboardNew() {
   }>({
     queryKey: ['/api/transactions', 'deposits'],
     queryFn: async () => {
-      const response = await fetch('/api/transactions?type=deposit', {
+      const response = await fetch(getApiUrl('/api/transactions?type=deposit'), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
@@ -74,7 +75,7 @@ export default function DashboardNew() {
   }>({
     queryKey: ['/api/batch-inventory', 'valuation'],
     queryFn: async () => {
-      const response = await fetch('/api/batch-inventory?includeExhausted=false', {
+      const response = await fetch(getApiUrl('/api/batch-inventory?includeExhausted=false'), {
         headers: getAuthHeaders(),
         credentials: 'include',
       });

@@ -5,6 +5,7 @@ import { Printer } from "lucide-react";
 import { AccountPayableLedgerFilters, LedgerFilterValues } from "../components/account-reports/accountspayableledger/filters";
 import { AccountPayableLedgerTable, LedgerTransaction } from "../components/account-reports/accountspayableledger/ledger-table";
 import { TransactionBookModal } from "../components/account-reports/accountspayableledger/transaction-book-modal";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface LedgerResponse {
   openingBalance: number;
@@ -31,7 +32,7 @@ export default function AccountPayableLedger() {
     queryKey: ["/api/account-payables", filters?.account_payable_id],
     queryFn: async () => {
       if (!filters?.account_payable_id) return null;
-      const response = await fetch(`/api/account-payables/${filters.account_payable_id}`, {
+      const response = await fetch(getApiUrl(`/api/account-payables/${filters.account_payable_id}`), {
         credentials: "include",
       });
       if (!response.ok) {
@@ -57,7 +58,7 @@ export default function AccountPayableLedger() {
         date_from: filters.date_from,
         date_to: filters.date_to,
       });
-      const resMain = await fetch(`/api/transactions?${params.toString()}`, {
+      const resMain = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), {
         credentials: "include",
       });
       if (!resMain.ok) {
@@ -84,7 +85,7 @@ export default function AccountPayableLedger() {
       const paramsAll = new URLSearchParams({
         account_payable_id: filters.account_payable_id,
       });
-      const resAll = await fetch(`/api/transactions?${paramsAll.toString()}`, {
+      const resAll = await fetch(getApiUrl(`/api/transactions?${paramsAll.toString()}`), {
         credentials: "include",
       });
       if (!resAll.ok) {
@@ -104,7 +105,7 @@ export default function AccountPayableLedger() {
       });
 
       // Fetch account payable to get initial_balance
-      const resAP = await fetch(`/api/account-payables/${filters.account_payable_id}`, {
+      const resAP = await fetch(getApiUrl(`/api/account-payables/${filters.account_payable_id}`), {
         credentials: "include",
       });
       let initialBalance = 0;

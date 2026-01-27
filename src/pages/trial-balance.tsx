@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface TrialBalanceData {
   debit: {
@@ -54,7 +55,7 @@ export default function TrialBalance() {
   }>({
     queryKey: ["/api/accounts/trial-balance"],
     queryFn: async () => {
-      const response = await fetch("/api/accounts/trial-balance", {
+      const response = await fetch(getApiUrl("/api/accounts/trial-balance"), {
         credentials: "include",
       });
       if (!response.ok) {

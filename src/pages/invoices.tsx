@@ -12,6 +12,7 @@ import { Plus, Search, Filter, FileText, DollarSign, Users, Calendar } from "luc
 import { InvoicesTable } from "@/components/invoices/invoices-table";
 import { InvoiceFormModal } from "@/components/invoices/invoice-form-modal";
 import { InvoiceDeleteModal } from "@/components/invoices/invoice-delete-modal";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface Invoice {
   id: string;
@@ -59,7 +60,7 @@ export default function InvoicesPage() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (accountReceivableFilter !== 'all') params.append('account_receivable_id', accountReceivableFilter);
       
-      const response = await fetch(`/api/invoices?${params.toString()}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/invoices?${params.toString()}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -74,7 +75,7 @@ export default function InvoicesPage() {
   }>({
     queryKey: ['/api/invoices/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/invoices/stats', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/invoices/stats'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -89,7 +90,7 @@ export default function InvoicesPage() {
   }>({
     queryKey: ['/api/account-receivables'],
     queryFn: async () => {
-      const response = await fetch('/api/account-receivables', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-receivables'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

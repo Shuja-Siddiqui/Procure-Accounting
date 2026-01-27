@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +36,7 @@ export function AccountReceivableLedgerFilters({
   const { data: accountsResponse, isLoading: isAccountsLoading } = useQuery({
     queryKey: ["/api/account-receivables", "ledger-dropdown"],
     queryFn: async () => {
-      const res = await fetch("/api/account-receivables?status=active", {
+      const res = await fetch(getApiUrl("/api/account-receivables?status=active"), {
         credentials: "include",
       });
       if (!res.ok) {

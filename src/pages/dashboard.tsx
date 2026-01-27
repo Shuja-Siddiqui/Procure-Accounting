@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import type { Account, Product } from "@shared/schema";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface AccountStats {
   totalAccounts: number;
@@ -111,7 +112,7 @@ export default function Dashboard() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch('/api/transactions?limit=10000', {
+      const response = await fetch(getApiUrl('/api/transactions?limit=10000'), {
         headers,
         credentials: 'include',
       });

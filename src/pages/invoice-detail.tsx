@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { InvoiceDeleteModal } from "@/components/invoices/invoice-delete-modal";
 import { InvoiceFormModal } from "@/components/invoices/invoice-form-modal";
 import { InvoicePrintModal } from "@/components/invoices/invoice-print-modal";
@@ -80,7 +80,7 @@ export default function InvoiceDetailPage() {
   }>({
     queryKey: ['/api/invoices', invoiceId],
     queryFn: async () => {
-      const response = await fetch(`/api/invoices/${invoiceId}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/invoices/${invoiceId}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

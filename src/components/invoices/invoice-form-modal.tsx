@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { insertInvoiceSchema, type InsertInvoice, type Invoice } from "@shared/schema";
 import { Loader2, Plus, Trash2, Package, DollarSign } from "lucide-react";
 import { ProductSelection } from "@/components/invoices/product-selection";
@@ -69,7 +69,7 @@ export function InvoiceFormModal({ isOpen, onClose, mode, invoice, onSuccess }: 
   }>({
     queryKey: ['/api/account-receivables'],
     queryFn: async () => {
-      const response = await fetch('/api/account-receivables', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-receivables'), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -84,7 +84,7 @@ export function InvoiceFormModal({ isOpen, onClose, mode, invoice, onSuccess }: 
   }>({
     queryKey: ['/api/invoice-products/invoice', invoice?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/invoice-products/invoice/${invoice?.id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/invoice-products/invoice/${invoice?.id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch invoice products');
       }
@@ -162,7 +162,7 @@ export function InvoiceFormModal({ isOpen, onClose, mode, invoice, onSuccess }: 
       // Update invoice-product relationships
       if (invoice?.id) {
         // Get current products
-        const currentProductsResponse = await fetch(`/api/invoice-products/invoice/${invoice.id}`, { credentials: 'include' });
+        const currentProductsResponse = await fetch(getApiUrl(`/api/invoice-products/invoice/${invoice.id}`), { credentials: 'include' });
         const currentProducts = await currentProductsResponse.json();
         const currentProductIds = currentProducts.data?.map((p: Product) => p.product_id) || [];
         const selectedProductIds = selectedProducts.map(p => p.id);

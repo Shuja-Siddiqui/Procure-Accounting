@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ export default function AccountPayablesPage() {
       if (cityFilter !== 'all') params.append('city', cityFilter);
       
       const url = `/api/account-payables${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await fetch(getApiUrl(url), { credentials: 'include' });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     },
@@ -70,7 +70,7 @@ export default function AccountPayablesPage() {
   }>({
     queryKey: ['/api/account-payables/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/account-payables/stats', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/account-payables/stats'), { credentials: 'include' });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     },

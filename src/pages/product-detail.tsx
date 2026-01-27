@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { ProductFormModal } from "@/components/products/product-form-modal";
 import { ProductDeleteModal } from "@/components/products/product-delete-modal";
 import { InventoryHistoryTable } from "@/components/products/inventory-history-table";
@@ -105,7 +105,7 @@ export default function ProductDetail() {
   }>({
     queryKey: ['/api/products', id],
     queryFn: async () => {
-      const response = await fetch(`/api/products/${id}`);
+      const response = await fetch(getApiUrl(`/api/products/${id}`));
       if (!response.ok) {
         throw new Error('Failed to fetch product');
       }
@@ -123,7 +123,7 @@ export default function ProductDetail() {
     queryKey: ['/api/products', id, 'inventory-history'],
     queryFn: async () => {
       // Use productsService.getProductInventoryHistory which now uses transaction_product_junction
-      const response = await fetch(`/api/products/${id}/inventory-history`);
+      const response = await fetch(getApiUrl(`/api/products/${id}/inventory-history`));
       if (!response.ok) {
         throw new Error('Failed to fetch inventory history');
       }
@@ -159,7 +159,7 @@ export default function ProductDetail() {
   }>({
     queryKey: ['/api/account-payable-products/product', id],
     queryFn: async () => {
-      const response = await fetch(`/api/account-payable-products/product/${id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/account-payable-products/product/${id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch accountPayables for product');
       }
@@ -175,7 +175,7 @@ export default function ProductDetail() {
   }>({
     queryKey: ['/api/purchaser-products/product', id],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-products/product/${id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-products/product/${id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch purchasers for product');
       }

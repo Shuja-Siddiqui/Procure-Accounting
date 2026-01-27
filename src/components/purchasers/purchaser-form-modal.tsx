@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiUrl } from "@/lib/queryClient";
 import { insertPurchaserSchema, type InsertPurchaser, type Purchaser } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import { ProductSelection } from "./product-selection";
@@ -87,7 +87,7 @@ export function PurchaserFormModal({ isOpen, onClose, mode, purchaser, onSuccess
   }>({
     queryKey: ['/api/purchaser-products/purchaser', purchaser?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-products/purchaser/${purchaser?.id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-products/purchaser/${purchaser?.id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -103,7 +103,7 @@ export function PurchaserFormModal({ isOpen, onClose, mode, purchaser, onSuccess
   }>({
     queryKey: ['/api/purchaser-account-payables/purchaser', purchaser?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/purchaser-account-payables/purchaser/${purchaser?.id}`, { credentials: 'include' });
+      const response = await fetch(getApiUrl(`/api/purchaser-account-payables/purchaser/${purchaser?.id}`), { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

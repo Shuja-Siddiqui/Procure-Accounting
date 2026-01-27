@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
+import { getApiUrl } from "@/lib/queryClient";
 
 interface Transaction {
   id: string;
@@ -32,7 +33,7 @@ export function LatestTransactions() {
   }>({
     queryKey: ['/api/transactions', 'latest'],
     queryFn: async () => {
-      const response = await fetch('/api/transactions?limit=5&page=1', { credentials: 'include' });
+      const response = await fetch(getApiUrl('/api/transactions?limit=5&page=1'), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch transactions');
       return response.json();
     },
