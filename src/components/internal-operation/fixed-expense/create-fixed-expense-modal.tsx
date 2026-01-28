@@ -93,6 +93,10 @@ export function CreateFixedExpenseModal({ isOpen, onClose, onNext }: CreateFixed
         description: "Insufficient balance in selected account",
         variant: "destructive",
       });
+      form.setError('paid_amount', {
+        type: 'manual',
+        message: "Transaction can't happen as selected account balance is low",
+      });
       return;
     }
 

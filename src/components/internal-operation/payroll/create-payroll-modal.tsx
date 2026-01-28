@@ -95,6 +95,10 @@ export function CreatePayrollModal({ isOpen, onClose, onNext }: CreatePayrollMod
         description: "Insufficient balance in selected account",
         variant: "destructive",
       });
+      form.setError('paid_amount', {
+        type: 'manual',
+        message: "Transaction can't happen as selected account balance is low",
+      });
       return;
     }
 
