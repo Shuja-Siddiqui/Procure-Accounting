@@ -151,6 +151,28 @@ export function AdvancePaymentModal({ isOpen, onClose, onSuccess }: AdvancePayme
       return;
     }
 
+    // Frontend balance check: prevent advance payment greater than selected source account balance
+    if (data.source_account_id) {
+      const sourceAccount = accounts.find((acc: any) => acc.id === data.source_account_id);
+      const sourceBalance = sourceAccount ? parseFloat(String(sourceAccount.balance ?? 0)) : 0;
+      const paymentAmount = parseFloat(data.paid_amount.toString());
+
+      if (paymentAmount > sourceBalance) {
+        toast({
+          title: "Validation Error",
+          description: "Transaction can't happen as selected account balance is low",
+          variant: "destructive",
+        });
+
+        form.setError('paid_amount', {
+          type: 'manual',
+          message: "Transaction can't happen as selected account balance is low",
+        });
+
+        return;
+      }
+    }
+
     // Prepare advance payment data
     const advancePaymentData: InsertTransaction = {
       type: 'advance_purchase_payment',

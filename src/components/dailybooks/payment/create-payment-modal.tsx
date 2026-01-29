@@ -220,6 +220,28 @@ export function CreatePaymentModal({ isOpen, onClose, onSuccess }: CreatePayment
       return;
     }
 
+    // Frontend balance check: prevent payment greater than selected source account balance
+    if (data.source_account_id) {
+      const sourceAccount = accounts.find((acc: any) => acc.id === data.source_account_id);
+      const sourceBalance = sourceAccount ? parseFloat(String(sourceAccount.balance ?? 0)) : 0;
+      const paymentAmount = parseFloat(data.total_amount);
+
+      if (paymentAmount > sourceBalance) {
+        toast({
+          title: "Validation Error",
+          description: "Transaction can't happen as selected account balance is low",
+          variant: "destructive",
+        });
+
+        form.setError('total_amount', {
+          type: 'manual',
+          message: "Transaction can't happen as selected account balance is low",
+        });
+
+        return;
+      }
+    }
+
     const selectedEntity = allOptions.find(opt => 
       opt.id === (selectionType === 'vendor' ? data.account_payable_id : data.account_receivable_id)
     );

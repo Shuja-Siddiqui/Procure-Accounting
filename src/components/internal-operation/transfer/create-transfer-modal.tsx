@@ -165,6 +165,28 @@ export function CreateTransferModal({ isOpen, onClose, onSuccess }: CreateTransf
       return;
     }
 
+    // Frontend balance check: prevent transfer greater than selected source account balance
+    if (data.source_account_id) {
+      const sourceAccount = accounts.find((acc: any) => acc.id === data.source_account_id);
+      const sourceBalance = sourceAccount ? parseFloat(String(sourceAccount.balance ?? 0)) : 0;
+      const transferAmount = parseFloat(data.paid_amount.toString());
+
+      if (transferAmount > sourceBalance) {
+        toast({
+          title: "Validation Error",
+          description: "Transaction can't happen as selected account balance is low",
+          variant: "destructive",
+        });
+
+        form.setError('paid_amount', {
+          type: 'manual',
+          message: "Transaction can't happen as selected account balance is low",
+        });
+
+        return;
+      }
+    }
+
     createTransferMutation.mutate(data);
   };
 
