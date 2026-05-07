@@ -19,6 +19,8 @@ export interface LedgerTransaction {
   total_amount?: string | number | null;
   paid_amount?: string | number | null;
   remaining_payment?: string | number | null;
+  freight_amount?: string | number | null;
+  freight_paid?: boolean | null;
   type?: string | null;
   created_at?: string | null;
 }
@@ -40,6 +42,15 @@ export function AccountPayableLedgerTable({
 }: LedgerTableProps) {
   const rows = useMemo(() => {
     let running = openingBalance || 0;
+    const displayRows: Array<LedgerTransaction & {
+      rowKind: "main" | "freight";
+      debit: number;
+      credit: number;
+      balance: number;
+      freight_paid?: boolean;
+      freight_amount_num?: number;
+      parentId?: string;
+    }> = [];
 
     // Sort by date ascending, then by created_at (oldest first, newest last)
     // This ensures transactions on the same date are in chronological order
@@ -55,7 +66,7 @@ export function AccountPayableLedgerTable({
       return ca - cb;
     });
 
-    return sorted.map((tx) => {
+    sorted.forEach((tx) => {
       let debit = 0;
       let credit = 0;
 
@@ -120,13 +131,41 @@ export function AccountPayableLedgerTable({
       // (For A/P, positive balance means we owe vendor)
       running = running + credit - debit;
 
-      return {
+      displayRows.push({
         ...tx,
+        rowKind: "main",
         debit,
         credit,
         balance: running,
-      };
+      });
+
+      const freightAmount = Number(tx.freight_amount ?? 0) || 0;
+      const freightPaid = tx.freight_paid === true;
+      if (freightAmount > 0) {
+        // Show freight with accounting visibility:
+        // - unpaid freight: credit only (adds payable balance)
+        // - paid freight: debit + credit equal (net zero effect on balance)
+        const freightDebit = freightPaid ? freightAmount : 0;
+        const freightCredit = freightAmount;
+        running = running + freightCredit - freightDebit;
+        displayRows.push({
+          ...tx,
+          id: `${tx.id}-freight`,
+          rowKind: "freight",
+          parentId: tx.id,
+          date: tx.date,
+          debit: freightDebit,
+          credit: freightCredit,
+          balance: running,
+          freight_paid: freightPaid,
+          freight_amount_num: freightAmount,
+          description: freightPaid
+            ? `Freight Paid (${freightAmount.toFixed(2)})`
+            : `Freight Remaining (${freightAmount.toFixed(2)})`,
+        });
+      }
     });
+    return displayRows;
   }, [transactions, openingBalance]);
 
   const formatDate = (date: string | null) => {
@@ -280,25 +319,39 @@ export function AccountPayableLedgerTable({
                     </TableRow>
                   ) : (
                     rows.map((row) => (
-                      <TableRow key={row.id}>
+                      <TableRow key={row.id} className={row.rowKind === "freight" ? "bg-muted/20" : ""}>
                         <TableCell className="text-sm">
                           {formatDate(row.date)}
                         </TableCell>
                         <TableCell className="text-sm">
-                          <Button
-                            size="sm"
-                            variant="link"
-                            className="h-auto p-0 text-blue-600 hover:text-blue-800"
-                            onClick={() => onViewBook(row.id)}
-                          >
-                            {getBookReference(row)}
-                          </Button>
+                          {row.rowKind === "freight" ? (
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                              onClick={() => onViewBook(row.parentId || row.id)}
+                            >
+                              {getBookReference({ ...row, id: row.parentId || row.id })}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                              onClick={() => onViewBook(row.id)}
+                            >
+                              {getBookReference(row)}
+                            </Button>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {getDescription(row)}
+                          {row.rowKind === "freight" ? row.description : getDescription(row)}
                         </TableCell>
                         <TableCell className="text-right text-sm">
                           {(() => {
+                            if (row.rowKind === "freight") {
+                              return row.debit > 0 ? formatCurrency(row.debit) : "-";
+                            }
                             if (row.type === "purchase_return") {
                               const paidAmount = Number(row.paid_amount ?? 0) || 0;
                               if (paidAmount === 0) return "-";
@@ -314,6 +367,9 @@ export function AccountPayableLedgerTable({
                         </TableCell>
                         <TableCell className="text-right text-sm">
                           {(() => {
+                            if (row.rowKind === "freight") {
+                              return row.credit > 0 ? formatCurrency(row.credit) : "-";
+                            }
                             if (row.type === "purchase_return") {
                               const totalAmount = Number(row.total_amount ?? 0) || 0;
                               if (totalAmount === 0) return "-";
@@ -376,26 +432,29 @@ export function AccountPayableLedgerTable({
                 </div>
               ) : (
                 rows.map((row) => (
-                  <div key={row.id} className="border rounded-lg p-4 space-y-2 bg-card">
+                  <div key={row.id} className={`border rounded-lg p-4 space-y-2 ${row.rowKind === "freight" ? "bg-muted/20" : "bg-card"}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{formatDate(row.date)}</span>
                       <Button
                         size="sm"
                         variant="link"
                         className="h-auto p-0 text-blue-600 hover:text-blue-800 text-xs"
-                        onClick={() => onViewBook(row.id)}
+                        onClick={() => onViewBook(row.rowKind === "freight" ? (row.parentId || row.id) : row.id)}
                       >
-                        {getBookReference(row)}
+                        {getBookReference({ ...row, id: row.rowKind === "freight" ? (row.parentId || row.id) : row.id })}
                       </Button>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {getDescription(row)}
+                      {row.rowKind === "freight" ? row.description : getDescription(row)}
                     </div>
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t">
                       <div>
                         <div className="text-xs text-muted-foreground">DEBIT</div>
                         <div className="text-sm font-medium">
                           {(() => {
+                            if (row.rowKind === "freight") {
+                              return row.debit > 0 ? formatCurrency(row.debit) : "-";
+                            }
                             if (row.type === "purchase_return") {
                               const paidAmount = Number(row.paid_amount ?? 0) || 0;
                               if (paidAmount === 0) return "-";
@@ -414,6 +473,9 @@ export function AccountPayableLedgerTable({
                         <div className="text-xs text-muted-foreground">CREDIT</div>
                         <div className="text-sm font-medium">
                           {(() => {
+                            if (row.rowKind === "freight") {
+                              return row.credit > 0 ? formatCurrency(row.credit) : "-";
+                            }
                             if (row.type === "purchase_return") {
                               const totalAmount = Number(row.total_amount ?? 0) || 0;
                               if (totalAmount === 0) return "-";

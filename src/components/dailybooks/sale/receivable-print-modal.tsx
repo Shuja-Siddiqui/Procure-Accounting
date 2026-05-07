@@ -28,6 +28,8 @@ interface Receivable {
   amount: string | number;
   total_payment: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -105,6 +107,18 @@ export function ReceivablePrintModal({ isOpen, onClose, receivable, keepDetailMo
       default:
         return 'Receipt Invoice';
     }
+  };
+
+  const getFreightMeta = (r: Receivable) => {
+    const baseAmount = Number(r.amount ?? 0) || 0;
+    const basePaid = Number(r.total_payment ?? 0) || 0;
+    const productRemaining = baseAmount - basePaid;
+    const freightAmount = Number((r as any).freight_amount ?? (r.transaction as any)?.freight_amount ?? 0) || 0;
+    const freightPaid = ((r as any).freight_paid ?? (r.transaction as any)?.freight_paid) === true;
+    const freightPaidAmount = freightPaid ? freightAmount : 0;
+    const freightRemaining = freightPaid ? 0 : freightAmount;
+    const totalOutstanding = productRemaining + freightRemaining;
+    return { baseAmount, basePaid, productRemaining, freightAmount, freightPaidAmount, freightRemaining, totalOutstanding };
   };
 
   const getAdilSteelHeader = () => {
@@ -236,6 +250,14 @@ export function ReceivablePrintModal({ isOpen, onClose, receivable, keepDetailMo
 
     const detectedCompany = getCompanyFromProducts();
     const products = receivable.products || [];
+    const {
+      basePaid,
+      productRemaining,
+      freightAmount,
+      freightPaidAmount,
+      freightRemaining,
+      totalOutstanding
+    } = getFreightMeta(receivable);
 
     const invoiceNumber =
       receivable.transaction?.sale_invoice_number ||
@@ -676,6 +698,24 @@ export function ReceivablePrintModal({ isOpen, onClose, receivable, keepDetailMo
                       <span>Remaining:</span>
                       <span style="color: orange; font-weight: 600;">${formatCurrency(remaining)}</span>
                     </div>
+                    ${freightAmount > 0 ? `
+                      <div class="summary-row">
+                        <span>Freight:</span>
+                        <span>${formatCurrency(freightAmount)}</span>
+                      </div>
+                      <div class="summary-row">
+                        <span>Freight Paid:</span>
+                        <span style="color: green;">${formatCurrency(freightPaidAmount)}</span>
+                      </div>
+                      <div class="summary-row">
+                        <span>Freight Remaining:</span>
+                        <span style="color: orange;">${formatCurrency(freightRemaining)}</span>
+                      </div>
+                      <div class="summary-row total border-t pt-2">
+                        <span>Total Outstanding:</span>
+                        <span style="color: orange; font-weight: 700;">${formatCurrency(totalOutstanding)}</span>
+                      </div>
+                    ` : ''}
                   `;
                 }
                 
@@ -717,12 +757,30 @@ export function ReceivablePrintModal({ isOpen, onClose, receivable, keepDetailMo
                     </div>
                     <div class="summary-row">
                       <span>Amount Received:</span>
-                      <span style="color: green;">${formatCurrency(receivable.total_payment)}</span>
+                      <span style="color: green;">${formatCurrency(basePaid)}</span>
                     </div>
                     <div class="summary-row">
                       <span>Amount Remaining:</span>
-                      <span style="color: orange; font-weight: 600;">${formatCurrency(receivable.remaining_payment)}</span>
+                      <span style="color: orange; font-weight: 600;">${formatCurrency(productRemaining)}</span>
                     </div>
+                    ${freightAmount > 0 ? `
+                      <div class="summary-row">
+                        <span>Freight:</span>
+                        <span>${formatCurrency(freightAmount)}</span>
+                      </div>
+                      <div class="summary-row">
+                        <span>Freight Paid:</span>
+                        <span style="color: green;">${formatCurrency(freightPaidAmount)}</span>
+                      </div>
+                      <div class="summary-row">
+                        <span>Freight Remaining:</span>
+                        <span style="color: orange;">${formatCurrency(freightRemaining)}</span>
+                      </div>
+                      <div class="summary-row total border-t pt-2">
+                        <span>Total Outstanding:</span>
+                        <span style="color: orange; font-weight: 700;">${formatCurrency(totalOutstanding)}</span>
+                      </div>
+                    ` : ''}
                   `;
                 }
                 
@@ -744,6 +802,20 @@ export function ReceivablePrintModal({ isOpen, onClose, receivable, keepDetailMo
                     <span>Remaining:</span>
                     <span style="color: orange; font-weight: 600;">${formatCurrency(remaining)}</span>
                   </div>
+                  ${freightAmount > 0 ? `
+                    <div class="summary-row">
+                      <span>Freight:</span>
+                      <span>${formatCurrency(freightAmount)}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Freight Paid:</span>
+                      <span style="color: green;">${formatCurrency(freightPaidAmount)}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Freight Remaining:</span>
+                      <span style="color: orange;">${formatCurrency(freightRemaining)}</span>
+                    </div>
+                  ` : ''}
                 `;
               })()}
             </div>

@@ -34,6 +34,8 @@ interface Payable {
   total_amount: string | number;
   paid_amount: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -153,6 +155,17 @@ export function PayablesTable({ payables, isLoading, onView, onFiltersChange }: 
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const getFreightMeta = (payable: Payable) => {
+    const totalAmount = Number(payable.total_amount ?? 0) || 0;
+    const paidAmount = Number(payable.paid_amount ?? 0) || 0;
+    const productRemainingAmount = totalAmount - paidAmount;
+    const freightAmount = Number(payable.freight_amount ?? 0) || 0;
+    const freightPaid = payable.freight_paid === true;
+    const freightPaidAmount = freightPaid ? freightAmount : 0;
+    const freightRemainingAmount = freightPaid ? 0 : freightAmount;
+    return { productRemainingAmount, freightAmount, freightPaid, freightPaidAmount, freightRemainingAmount };
   };
 
   const getStatusBadge = (status: string) => {
@@ -465,6 +478,7 @@ export function PayablesTable({ payables, isLoading, onView, onFiltersChange }: 
                         filteredPayables.map((payable) => {
                           const invoiceNumber = payable.purchase_invoice_number || payable.transaction?.purchase_invoice_number || '-';
                           const isCopied = copiedInvoiceId === invoiceNumber;
+                          const { productRemainingAmount, freightAmount, freightPaidAmount, freightRemainingAmount } = getFreightMeta(payable);
                           
                           return (
                             <TableRow 
@@ -531,13 +545,28 @@ export function PayablesTable({ payables, isLoading, onView, onFiltersChange }: 
                                 )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium overflow-hidden text-ellipsis">
-                                {formatCurrency(payable.total_amount)}
+                                <div>{formatCurrency(payable.total_amount)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium text-green-600 overflow-hidden text-ellipsis">
-                                {formatCurrency(payable.paid_amount)}
+                                <div>{formatCurrency(payable.paid_amount)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightPaidAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium text-orange-600 overflow-hidden text-ellipsis">
-                                {formatCurrency(payable.remaining_payment)}
+                                <div>{formatCurrency(productRemainingAmount)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightRemainingAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm text-muted-foreground overflow-hidden text-ellipsis">
                                 {formatDate(payable.transaction?.date || payable.created_at)}
@@ -562,7 +591,9 @@ export function PayablesTable({ payables, isLoading, onView, onFiltersChange }: 
                     </Card>
                   ))
                 ) : (
-                  filteredPayables.map((payable) => (
+                  filteredPayables.map((payable) => {
+                    const { productRemainingAmount, freightAmount, freightPaidAmount, freightRemainingAmount } = getFreightMeta(payable);
+                    return (
                     <Card key={payable.id}>
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
@@ -633,19 +664,28 @@ export function PayablesTable({ payables, isLoading, onView, onFiltersChange }: 
                           <div>
                             <p className="text-muted-foreground">Amount</p>
                             <p className="font-medium">{formatCurrency(payable.total_amount)}</p>
+                            {freightAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightAmount)}</p>
+                            )}
                           </div>
                           <div>
                             <p className="text-muted-foreground">Paid</p>
                             <p className="font-medium text-green-600">{formatCurrency(payable.paid_amount)}</p>
+                            {freightAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightPaidAmount)}</p>
+                            )}
                           </div>
                           <div>
                             <p className="text-muted-foreground">Remaining</p>
-                            <p className="font-medium text-orange-600">{formatCurrency(payable.remaining_payment)}</p>
+                            <p className="font-medium text-orange-600">{formatCurrency(productRemainingAmount)}</p>
+                            {freightAmount > 0 && (
+                              <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightRemainingAmount)}</p>
+                            )}
                           </div>
                         </div>
                       </CardContent>
                     </Card>
-                  ))
+                  )})
                 )}
               </div>
             </>

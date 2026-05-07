@@ -20,6 +20,8 @@ interface Receivable {
   amount: string | number;
   total_payment: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -117,6 +119,8 @@ export default function DailyBookSaleInvoices() {
           amount: tx.total_amount || '0.00',  // Total invoice amount
           total_payment: tx.paid_amount || '0.00',  // Received/paid amount
           remaining_payment: tx.remaining_payment || '0.00',
+          freight_amount: tx.freight_amount || '0.00',
+          freight_paid: tx.freight_paid === true,
           status: parseFloat(tx.remaining_payment || '0') === 0 ? 'paid' : 
                  (parseFloat(tx.paid_amount || '0') > 0 ? 'partial_pending' : 'pending'),
           description: tx.description,

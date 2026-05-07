@@ -40,6 +40,8 @@ interface Receivable {
   amount: string | number;
   total_payment: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -170,6 +172,17 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const getFreightMeta = (receivable: Receivable) => {
+    const baseAmount = Number(receivable.amount ?? 0) || 0;
+    const basePaid = Number(receivable.total_payment ?? 0) || 0;
+    const productRemainingAmount = baseAmount - basePaid;
+    const freightAmount = Number(receivable.freight_amount ?? 0) || 0;
+    const freightPaid = receivable.freight_paid === true;
+    const freightPaidAmount = freightPaid ? freightAmount : 0;
+    const freightRemainingAmount = freightPaid ? 0 : freightAmount;
+    return { productRemainingAmount, freightAmount, freightPaidAmount, freightRemainingAmount };
   };
 
   const getTransactionTypeLabel = (type: string | undefined) => {
@@ -512,6 +525,7 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
                           const remaining = typeof receivable.remaining_payment === 'string'
                             ? parseFloat(receivable.remaining_payment) 
                             : receivable.remaining_payment || 0;
+                          const { productRemainingAmount, freightAmount, freightPaidAmount, freightRemainingAmount } = getFreightMeta(receivable);
                           
                           return (
                             <TableRow 
@@ -583,13 +597,28 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
                                 )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium">
-                                {formatCurrency(amount)}
+                                <div>{formatCurrency(amount)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium text-green-600">
-                                {formatCurrency(paid)}
+                                <div>{formatCurrency(paid)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightPaidAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm font-medium text-orange-600">
-                                {formatCurrency(remaining)}
+                                <div>{formatCurrency(productRemainingAmount)}</div>
+                                {freightAmount > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Freight: {formatCurrency(freightRemainingAmount)}
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-sm">
                                 {formatDate(receivable.transaction?.date || receivable.created_at)}
@@ -618,6 +647,7 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
                     const invoiceNumber = receivable.sale_invoice_number || receivable.receipt_invoice_number || receivable.transaction?.sale_invoice_number || receivable.transaction?.receipt_invoice_number || '-';
                     const isCopied = copiedInvoiceId === invoiceNumber;
                     
+                    const { productRemainingAmount, freightAmount, freightPaidAmount, freightRemainingAmount } = getFreightMeta(receivable);
                     return (
                       <Card 
                         key={receivable.id}
@@ -691,14 +721,23 @@ export function ReceivablesTable({ receivables, isLoading, onView, onEdit, onDel
                             <div>
                               <p className="text-muted-foreground">Amount</p>
                               <p className="font-medium">{formatCurrency(receivable.amount)}</p>
+                              {freightAmount > 0 && (
+                                <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightAmount)}</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-muted-foreground">Paid</p>
                               <p className="font-medium text-green-600">{formatCurrency(receivable.total_payment)}</p>
+                              {freightAmount > 0 && (
+                                <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightPaidAmount)}</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-muted-foreground">Remaining</p>
-                              <p className="font-medium text-orange-600">{formatCurrency(receivable.remaining_payment)}</p>
+                              <p className="font-medium text-orange-600">{formatCurrency(productRemainingAmount)}</p>
+                              {freightAmount > 0 && (
+                                <p className="text-xs text-muted-foreground">Freight: {formatCurrency(freightRemainingAmount)}</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-muted-foreground">Transaction Date</p>

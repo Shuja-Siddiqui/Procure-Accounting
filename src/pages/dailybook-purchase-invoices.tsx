@@ -20,6 +20,8 @@ interface Payable {
   total_amount: string | number;
   paid_amount: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -115,6 +117,8 @@ export default function DailyBookPurchaseInvoices() {
           total_amount: tx.total_amount || '0.00',
           paid_amount: tx.paid_amount || '0.00',
           remaining_payment: tx.remaining_payment || '0.00',
+          freight_amount: tx.freight_amount || '0.00',
+          freight_paid: tx.freight_paid === true,
           status: parseFloat(tx.remaining_payment || '0') === 0 ? 'paid' : 
                  (parseFloat(tx.paid_amount || '0') > 0 ? 'partial_pending' : 'pending'),
           description: tx.description,

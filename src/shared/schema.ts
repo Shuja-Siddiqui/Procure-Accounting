@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, pgEnum, integer, real, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, pgEnum, integer, real, date, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -324,6 +324,8 @@ export const transactions = pgTable("transactions", {
   mode_of_payment: modeOfPaymentEnum("mode_of_payment"),
   paid_amount: decimal("paid_amount", { precision: 15, scale: 2 }),
   remaining_payment: decimal("remaining_payment", { precision: 15, scale: 2 }),
+  freight_amount: decimal("freight_amount", { precision: 15, scale: 2 }).default("0.00").notNull(),
+  freight_paid: boolean("freight_paid").default(false).notNull(),
   date: timestamp("date"),
   purchase_invoice_number: varchar("purchase_invoice_number", { length: 50 }),
   sale_invoice_number: varchar("sale_invoice_number", { length: 50 }),
@@ -512,6 +514,8 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   source_account_id: z.string().nullable().optional(),
   destination_account_id: z.string().nullable().optional(),
   total_amount: z.string().optional(),
+  freight_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid freight amount format").optional(),
+  freight_paid: z.boolean().optional(),
   opening_balance: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid opening balance format").optional(),
   closing_balance: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid closing balance format").optional(),
   description: z.string().optional(),

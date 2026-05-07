@@ -638,6 +638,8 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
     defaultValues: {
       type: "sale",
       paid_amount: "0.00",
+      freight_amount: "0.00",
+      freight_paid: false,
       description: "",
       mode_of_payment: "bank_transfer",
       total_payment: "0.00",
@@ -663,6 +665,15 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
   const [pendingProductsPayload, setPendingProductsPayload] = useState<any[]>([]);
   const [pendingDisplayItems, setPendingDisplayItems] = useState<SaleItem[]>([]);
 
+  const calculateRemainingWithFreight = (
+    baseTotal: number,
+    paidAmount: number,
+    freightAmount: number,
+    freightPaid: boolean
+  ) => {
+    return (baseTotal - paidAmount) + (freightPaid ? 0 : freightAmount);
+  };
+
   const { data: productsResponse } = useQuery({
     queryKey: ['/api/products'],
     queryFn: () => apiRequest('GET', '/api/products'),
@@ -685,10 +696,12 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
   const createSaleWithProductsMutation = useMutation({
     mutationFn: (data: { transaction: InsertTransaction; products: any[] }) => 
       apiRequest('POST', '/api/transactions/sale-with-products', data),
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       // Invalidate all relevant queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions', 'all-sales'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/stats', 'all-sales'] });
       queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/accounts/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transaction-product-junctions'] });
@@ -727,6 +740,11 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
         queryClient.invalidateQueries({ queryKey: ['/api/transactions/account-receivable', data.data.transaction.account_receivable_id] });
       }
       
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/transactions', 'all-sales'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['/api/transactions/stats', 'all-sales'], type: 'active' }),
+      ]);
+      
       toast({
         title: "Success",
         description: "Sale transaction with products created successfully",
@@ -740,6 +758,8 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
         mode_of_payment: "bank_transfer",
         total_payment: "0.00",
         remaining_payment: "0.00",
+        freight_amount: "0.00",
+        freight_paid: false,
         date: new Date().toISOString().split('T')[0],
         destination_account_id: "",
         account_receivable_id: "",
@@ -840,7 +860,9 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
     
     // Calculate remaining payment correctly
     // Allow negative values for overpayments (handled by backend)
-    const calculatedRemaining = calculatedTotal - advancePayment;
+    const freightAmount = parseFloat((data as any).freight_amount || "0") || 0;
+    const freightPaid = (data as any).freight_paid === true;
+    const calculatedRemaining = calculateRemainingWithFreight(calculatedTotal, advancePayment, freightAmount, freightPaid);
     processedData.remaining_payment = calculatedRemaining.toFixed(2);
     
     // Add user_id (NEW)
@@ -1150,7 +1172,9 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
     // Calculate remaining payment
     // Allow negative values for overpayments (handled by backend)
     const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
-    const remaining = total - enteredAmount;
+    const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+    const freightPaid = form.getValues('freight_paid') === true;
+    const remaining = calculateRemainingWithFreight(total, enteredAmount, freightAmount, freightPaid);
     setRemainingPayment(remaining);
     form.setValue('remaining_payment', remaining.toFixed(2));
   }, [saleItems, form]);
@@ -1159,10 +1183,12 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
   // Allow negative values for overpayments (handled by backend)
   useEffect(() => {
     const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
-    const remaining = calculatedTotal - enteredAmount;
+    const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+    const freightPaid = form.getValues('freight_paid') === true;
+    const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
     setRemainingPayment(remaining);
     form.setValue('remaining_payment', remaining.toFixed(2));
-  }, [form.watch('paid_amount'), calculatedTotal, form]);
+  }, [form.watch('paid_amount'), form.watch('freight_amount'), form.watch('freight_paid'), calculatedTotal, form]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -1174,6 +1200,8 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
         mode_of_payment: "bank_transfer",
         total_payment: "0.00",
         remaining_payment: "0.00",
+        freight_amount: "0.00",
+        freight_paid: false,
         date: new Date().toISOString().split('T')[0],
         destination_account_id: "",
         account_receivable_id: "",
@@ -1416,6 +1444,69 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
               />
             </div>
 
+            {/* Freight section (full width) */}
+            <div className="w-full rounded-md border p-4 space-y-3">
+              <FormField
+                control={form.control}
+                name="freight_paid"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <FormLabel className="text-sm font-medium mb-0">Freight Paid</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => {
+                          const isPaid = checked === true;
+                          field.onChange(isPaid);
+                          const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
+                          const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+                          const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, isPaid);
+                          setRemainingPayment(remaining);
+                          form.setValue('remaining_payment', remaining.toFixed(2));
+                        }}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="freight_amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Freight Amount</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          value = value.replace(/[^0-9.]/g, '');
+                          const parts = value.split('.');
+                          if (parts.length > 2) {
+                            value = `${parts[0]}.${parts.slice(1).join('')}`;
+                          }
+                          if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
+                            value = value.replace(/^0+/, '');
+                          }
+                          field.onChange(value);
+                          const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
+                          const freightAmount = parseFloat(value || '0') || 0;
+                          const freightPaid = form.getValues('freight_paid') === true;
+                          const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
+                          setRemainingPayment(remaining);
+                          form.setValue('remaining_payment', remaining.toFixed(2));
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Amount (Advance Payment) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
@@ -1442,7 +1533,9 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
                             // Update remaining payment when amount changes
                             // Allow negative values for overpayments (handled by backend)
                             const enteredAmount = parseFloat(value) || 0;
-                            const remaining = calculatedTotal - enteredAmount;
+                            const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+                            const freightPaid = form.getValues('freight_paid') === true;
+                            const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
                             setRemainingPayment(remaining);
                             form.setValue('remaining_payment', remaining.toFixed(2));
                             
@@ -1540,6 +1633,8 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
                     mode_of_payment: "bank_transfer",
                     total_payment: "0.00",
                     remaining_payment: "0.00",
+                    freight_amount: "0.00",
+                    freight_paid: false,
                     date: new Date().toISOString().split('T')[0],
                     destination_account_id: "",
                     account_receivable_id: "",
@@ -1640,7 +1735,7 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
           </div>
 
           {/* Totals */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground">Total</p>
               <p className="font-semibold">
@@ -1651,6 +1746,13 @@ export function SaleModal({ isOpen, onClose, onSuccess }: SaleModalProps) {
               <p className="text-muted-foreground">Paid</p>
               <p className="font-semibold">
                 {pendingTransaction?.paid_amount || '0.00'}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Freight</p>
+              <p className="font-semibold">
+                {pendingTransaction?.freight_amount || '0.00'}
+                {pendingTransaction?.freight_paid ? ' (paid)' : ' (unpaid)'}
               </p>
             </div>
             <div>

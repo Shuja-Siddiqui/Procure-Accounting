@@ -39,6 +39,8 @@ interface Receivable {
     amount: string | number;
     total_payment: string | number;
     remaining_payment: string | number;
+    freight_amount?: string | number;
+    freight_paid?: boolean;
     status: 'pending' | 'partial_pending' | 'paid';
     description?: string | null;
     due_date?: string | null;
@@ -120,6 +122,8 @@ export function ReceivableInvoiceViewModal({
                 amount: tx.total_amount || '0.00', // Total invoice amount
                 total_payment: tx.paid_amount || '0.00', // Amount received/paid
                 remaining_payment: tx.remaining_payment || '0.00',
+                freight_amount: tx.freight_amount || '0.00',
+                freight_paid: tx.freight_paid === true,
                 status,
                 description: tx.description,
                 due_date: tx.date,
@@ -233,6 +237,18 @@ export function ReceivableInvoiceViewModal({
 
     const hasProducts = (receivable: Receivable | null) => {
         return receivable?.products && receivable.products.length > 0;
+    };
+
+    const getFreightMeta = (receivable: Receivable) => {
+        const baseAmount = Number(receivable.amount ?? 0) || 0;
+        const basePaid = Number(receivable.total_payment ?? 0) || 0;
+        const productRemaining = baseAmount - basePaid;
+        const freightAmount = Number(receivable.freight_amount ?? 0) || 0;
+        const freightPaid = receivable.freight_paid === true;
+        const freightPaidAmount = freightPaid ? freightAmount : 0;
+        const freightRemaining = freightPaid ? 0 : freightAmount;
+        const totalOutstanding = productRemaining + freightRemaining;
+        return { basePaid, productRemaining, freightAmount, freightPaidAmount, freightRemaining, totalOutstanding };
     };
 
     // Helper function to determine company from products
@@ -509,6 +525,7 @@ export function ReceivableInvoiceViewModal({
                                             const total = parseFloat(receivable.amount?.toString() || receivable.total_payment?.toString() || '0');
                                             const paid = parseFloat(receivable.total_payment?.toString() || '0');
                                             const remaining = parseFloat(receivable.remaining_payment?.toString() || '0');
+                                            const { freightAmount, freightPaidAmount, freightRemaining, totalOutstanding } = getFreightMeta(receivable);
                                             
                                             return (
                                                 <>
@@ -524,6 +541,26 @@ export function ReceivableInvoiceViewModal({
                                                         <span className="text-gray-600 font-semibold">Remaining:</span>
                                                         <span className="font-bold text-lg text-orange-600">{formatCurrency(remaining)}</span>
                                                     </div>
+                                                    {freightAmount > 0 && (
+                                                        <>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight:</span>
+                                                                <span className="font-medium">{formatCurrency(freightAmount)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight Paid:</span>
+                                                                <span className="font-medium text-green-600">{formatCurrency(freightPaidAmount)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight Remaining:</span>
+                                                                <span className="font-medium text-orange-600">{formatCurrency(freightRemaining)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm border-t pt-2">
+                                                                <span className="text-gray-600 font-semibold">Total Outstanding:</span>
+                                                                <span className="font-bold text-lg text-orange-600">{formatCurrency(totalOutstanding)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </>
                                             );
                                         }
@@ -551,6 +588,7 @@ export function ReceivableInvoiceViewModal({
                                             
                                             // Discounted total (what we're actually receiving)
                                             const discountedTotal = parseFloat(receivable.amount?.toString() || '0');
+                                            const { basePaid, productRemaining, freightAmount, freightPaidAmount, freightRemaining, totalOutstanding } = getFreightMeta(receivable);
                                             
                                             const hasDiscount = totalDiscount > 0;
                                             
@@ -572,12 +610,32 @@ export function ReceivableInvoiceViewModal({
                                                     </div>
                                                     <div className="flex justify-between text-sm">
                                                         <span className="text-gray-600">Amount Received:</span>
-                                                        <span className="font-semibold text-green-600">{formatCurrency(receivable.total_payment)}</span>
+                                                        <span className="font-semibold text-green-600">{formatCurrency(basePaid)}</span>
                                                     </div>
                                                     <div className="flex justify-between text-sm border-t pt-2">
                                                         <span className="text-gray-600 font-semibold">Amount Remaining:</span>
-                                                        <span className="font-bold text-lg text-orange-600">{formatCurrency(receivable.remaining_payment)}</span>
+                                                        <span className="font-bold text-lg text-orange-600">{formatCurrency(productRemaining)}</span>
                                                     </div>
+                                                    {freightAmount > 0 && (
+                                                        <>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight:</span>
+                                                                <span className="font-medium">{formatCurrency(freightAmount)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight Paid:</span>
+                                                                <span className="font-medium text-green-600">{formatCurrency(freightPaidAmount)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">Freight Remaining:</span>
+                                                                <span className="font-medium text-orange-600">{formatCurrency(freightRemaining)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm border-t pt-2">
+                                                                <span className="text-gray-600 font-semibold">Total Outstanding:</span>
+                                                                <span className="font-bold text-lg text-orange-600">{formatCurrency(totalOutstanding)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </>
                                             );
                                         }
@@ -597,6 +655,22 @@ export function ReceivableInvoiceViewModal({
                                                     <span className="text-gray-600 font-semibold">Remaining:</span>
                                                     <span className="font-bold text-lg text-orange-600">{formatCurrency(parseFloat(receivable.remaining_payment?.toString() || '0'))}</span>
                                                 </div>
+                                                {(Number(receivable.freight_amount ?? 0) || 0) > 0 && (
+                                                    <>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Freight:</span>
+                                                            <span className="font-medium">{formatCurrency(Number(receivable.freight_amount ?? 0) || 0)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Freight Paid:</span>
+                                                            <span className="font-medium text-green-600">{formatCurrency(receivable.freight_paid ? (Number(receivable.freight_amount ?? 0) || 0) : 0)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">Freight Remaining:</span>
+                                                            <span className="font-medium text-orange-600">{formatCurrency(receivable.freight_paid ? 0 : (Number(receivable.freight_amount ?? 0) || 0))}</span>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </>
                                         );
                                     })()}

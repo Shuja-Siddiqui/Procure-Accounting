@@ -36,6 +36,8 @@ interface Payable {
   total_amount: string | number;
   paid_amount: string | number;
   remaining_payment: string | number;
+  freight_amount?: string | number;
+  freight_paid?: boolean;
   status: 'pending' | 'partial_pending' | 'paid';
   description?: string | null;
   due_date?: string | null;
@@ -110,6 +112,18 @@ export function PayablePrintModal({ isOpen, onClose, payable, keepDetailModalOpe
 
   const hasProducts = () => {
     return payable?.products && payable.products.length > 0;
+  };
+
+  const getFreightMeta = (p: Payable) => {
+    const baseTotal = Number(p.total_amount ?? 0) || 0;
+    const basePaid = Number(p.paid_amount ?? 0) || 0;
+    const productRemaining = baseTotal - basePaid;
+    const freightAmount = Number((p as any).freight_amount ?? (p.transaction as any)?.freight_amount ?? 0) || 0;
+    const freightPaid = ((p as any).freight_paid ?? (p.transaction as any)?.freight_paid) === true;
+    const freightPaidAmount = freightPaid ? freightAmount : 0;
+    const freightRemaining = freightPaid ? 0 : freightAmount;
+    const totalOutstanding = productRemaining + freightRemaining;
+    return { baseTotal, basePaid, productRemaining, freightAmount, freightPaidAmount, freightRemaining, totalOutstanding };
   };
 
   const getAdilSteelHeader = () => {
@@ -250,6 +264,14 @@ export function PayablePrintModal({ isOpen, onClose, payable, keepDetailModalOpe
       payable.transaction?.purchase_invoice_number ||
       payable.purchase_invoice_number ||
       payable.id.substring(0, 8).toUpperCase();
+    const {
+      basePaid,
+      productRemaining,
+      freightAmount,
+      freightPaidAmount,
+      freightRemaining,
+      totalOutstanding
+    } = getFreightMeta(payable);
 
     const printContent = `
       <!DOCTYPE html>
@@ -674,12 +696,30 @@ export function PayablePrintModal({ isOpen, onClose, payable, keepDetailModalOpe
                   </div>
                   <div class="summary-row">
                     <span>Amount Paid:</span>
-                    <span style="color: green;">${formatCurrency(payable.paid_amount)}</span>
+                    <span style="color: green;">${formatCurrency(basePaid)}</span>
                   </div>
                   <div class="summary-row">
                     <span>Amount Remaining:</span>
-                    <span style="color: orange; font-weight: 600;">${formatCurrency(payable.remaining_payment)}</span>
+                    <span style="color: orange; font-weight: 600;">${formatCurrency(productRemaining)}</span>
                   </div>
+                  ${freightAmount > 0 ? `
+                    <div class="summary-row">
+                      <span>Freight:</span>
+                      <span>${formatCurrency(freightAmount)}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Freight Paid:</span>
+                      <span style="color: green;">${formatCurrency(freightPaidAmount)}</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Freight Remaining:</span>
+                      <span style="color: orange;">${formatCurrency(freightRemaining)}</span>
+                    </div>
+                    <div class="summary-row total border-t pt-2">
+                      <span>Total Outstanding:</span>
+                      <span style="color: orange; font-weight: 700;">${formatCurrency(totalOutstanding)}</span>
+                    </div>
+                  ` : ''}
                 `;
               })()}
             </div>
@@ -761,6 +801,17 @@ export function PayablePrintModal({ isOpen, onClose, payable, keepDetailModalOpe
               <p><strong>Amount:</strong> {formatCurrency(payable.total_amount)}</p>
               <p><strong>Paid:</strong> {formatCurrency(payable.paid_amount)}</p>
               <p><strong>Remaining:</strong> {formatCurrency(payable.remaining_payment)}</p>
+              {(Number((payable as any).freight_amount ?? (payable.transaction as any)?.freight_amount ?? 0) || 0) > 0 && (
+                <>
+                  <p><strong>Freight:</strong> {formatCurrency((payable as any).freight_amount ?? (payable.transaction as any)?.freight_amount ?? 0)}</p>
+                  <p><strong>Freight Paid:</strong> {formatCurrency((((payable as any).freight_paid ?? (payable.transaction as any)?.freight_paid) === true)
+                    ? ((payable as any).freight_amount ?? (payable.transaction as any)?.freight_amount ?? 0)
+                    : 0)}</p>
+                  <p><strong>Freight Remaining:</strong> {formatCurrency((((payable as any).freight_paid ?? (payable.transaction as any)?.freight_paid) === true)
+                    ? 0
+                    : ((payable as any).freight_amount ?? (payable.transaction as any)?.freight_amount ?? 0))}</p>
+                </>
+              )}
               <p><strong>Products:</strong> {payable.products?.length || 0} item(s)</p>
             </div>
           </div>

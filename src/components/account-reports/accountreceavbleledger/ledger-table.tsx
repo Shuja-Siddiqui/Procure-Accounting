@@ -18,6 +18,10 @@ export interface LedgerTransaction {
     amount: string | number | null;
     total_payment?: string | number | null;
     remaining_payment?: string | number | null;
+    total_amount?: string | number | null;
+    paid_amount?: string | number | null;
+    freight_amount?: string | number | null;
+    freight_paid?: boolean | null;
     type?: string | null;
     created_at?: string | null;
 }
@@ -54,7 +58,15 @@ export function AccountReceivableLedgerTable({
             return ca - cb;
         });
 
-        return sorted.map((tx) => {
+        const displayRows: Array<LedgerTransaction & {
+            rowKind: "main" | "freight";
+            debit: number;
+            credit: number;
+            balance: number;
+            parentId?: string;
+        }> = [];
+
+        sorted.forEach((tx) => {
             let debit = 0;
             let credit = 0;
 
@@ -116,14 +128,39 @@ export function AccountReceivableLedgerTable({
 
             // Standard accounting: balance = previous + debit - credit (for asset accounts)
             running = running + debit - credit;
-
-            return {
+            displayRows.push({
                 ...tx,
+                rowKind: "main",
                 debit,
                 credit,
                 balance: running,
-            };
+            });
+
+            const freightAmount = Number((tx as any).freight_amount ?? 0) || 0;
+            const freightPaid = (tx as any).freight_paid === true;
+            if (freightAmount > 0) {
+                // AR freight row:
+                // - unpaid freight increases receivable (debit only)
+                // - paid freight shown as equal debit+credit for visibility (net zero)
+                const freightDebit = freightAmount;
+                const freightCredit = freightPaid ? freightAmount : 0;
+                running = running + freightDebit - freightCredit;
+                displayRows.push({
+                    ...tx,
+                    id: `${tx.id}-freight`,
+                    rowKind: "freight",
+                    parentId: tx.id,
+                    date: tx.date,
+                    description: freightPaid
+                        ? `Freight Paid (${freightAmount.toFixed(2)})`
+                        : `Freight Remaining (${freightAmount.toFixed(2)})`,
+                    debit: freightDebit,
+                    credit: freightCredit,
+                    balance: running,
+                });
+            }
         });
+        return displayRows;
     }, [transactions, openingBalance]);
 
     const formatDate = (date: string | null) => {
@@ -273,7 +310,7 @@ export function AccountReceivableLedgerTable({
                                             </TableRow>
                                         ) : (
                                             rows.map((row) => (
-                                                <TableRow key={row.id}>
+                                                <TableRow key={row.id} className={row.rowKind === "freight" ? "bg-muted/20" : ""}>
                                                     <TableCell className="text-sm">
                                                         {formatDate(row.date)}
                                                     </TableCell>
@@ -282,16 +319,19 @@ export function AccountReceivableLedgerTable({
                                                             size="sm"
                                                             variant="link"
                                                             className="h-auto p-0 text-blue-600 hover:text-blue-800"
-                                                            onClick={() => onViewBook(row.id)}
+                                                            onClick={() => onViewBook(row.rowKind === "freight" ? (row.parentId || row.id) : row.id)}
                                                         >
-                                                            {getBookReference(row)}
+                                                            {getBookReference({ ...row, id: row.rowKind === "freight" ? (row.parentId || row.id) : row.id })}
                                                         </Button>
                                                     </TableCell>
                                                     <TableCell className="text-sm">
-                                                        {getDescription(row)}
+                                                        {row.rowKind === "freight" ? row.description : getDescription(row)}
                                                     </TableCell>
                                                     <TableCell className="text-right text-sm">
                                                         {(() => {
+                                                            if (row.rowKind === "freight") {
+                                                                return row.debit > 0 ? formatCurrency(row.debit) : "-";
+                                                            }
                                                             if (row.type === "sale_return") {
                                                                 const totalAmount = Number((row as any).total_amount ?? (row as any).total_payment ?? row.amount ?? 0);
                                                                 // DEBIT is negative for sale_return (reverses the sale)
@@ -305,6 +345,9 @@ export function AccountReceivableLedgerTable({
                                                     </TableCell>
                                                     <TableCell className="text-right text-sm">
                                                         {(() => {
+                                                            if (row.rowKind === "freight") {
+                                                                return row.credit > 0 ? formatCurrency(row.credit) : "-";
+                                                            }
                                                             if (row.type === "sale_return") {
                                                                 const paidAmount = Number((row as any).paid_amount ?? 0);
                                                                 // CREDIT is negative for sale_return (reverses the payment)
@@ -370,26 +413,29 @@ export function AccountReceivableLedgerTable({
                                     </div>
                                 ) : (
                                     rows.map((row) => (
-                                        <div key={row.id} className="border rounded-lg p-4 space-y-2 bg-card">
+                                        <div key={row.id} className={`border rounded-lg p-4 space-y-2 ${row.rowKind === "freight" ? "bg-muted/20" : "bg-card"}`}>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium">{formatDate(row.date)}</span>
                                                 <Button
                                                     size="sm"
                                                     variant="link"
                                                     className="h-auto p-0 text-blue-600 hover:text-blue-800 text-xs"
-                                                    onClick={() => onViewBook(row.id)}
+                                                    onClick={() => onViewBook(row.rowKind === "freight" ? (row.parentId || row.id) : row.id)}
                                                 >
-                                                    {getBookReference(row)}
+                                                    {getBookReference({ ...row, id: row.rowKind === "freight" ? (row.parentId || row.id) : row.id })}
                                                 </Button>
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                {getDescription(row)}
+                                                {row.rowKind === "freight" ? row.description : getDescription(row)}
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 pt-2 border-t">
                                                 <div>
                                                     <div className="text-xs text-muted-foreground">DEBIT</div>
                                                     <div className="text-sm font-medium">
                                                         {(() => {
+                                                            if (row.rowKind === "freight") {
+                                                                return row.debit > 0 ? formatCurrency(row.debit) : "-";
+                                                            }
                                                             if (row.type === "sale_return") {
                                                                 const totalAmount = Number((row as any).total_amount ?? (row as any).total_payment ?? row.amount ?? 0);
                                                                 // DEBIT is negative for sale_return (reverses the sale)
@@ -406,6 +452,9 @@ export function AccountReceivableLedgerTable({
                                                     <div className="text-xs text-muted-foreground">CREDIT</div>
                                                     <div className="text-sm font-medium">
                                                         {(() => {
+                                                            if (row.rowKind === "freight") {
+                                                                return row.credit > 0 ? formatCurrency(row.credit) : "-";
+                                                            }
                                                             if (row.type === "sale_return") {
                                                                 const paidAmount = Number((row as any).paid_amount ?? 0);
                                                                 // CREDIT is negative for sale_return (reverses the payment)

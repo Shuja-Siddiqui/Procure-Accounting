@@ -191,6 +191,15 @@ export default function AccountPayableLedger() {
 
           // For A/P: balance = previous + credit - debit
           openingBalance = openingBalance + credit - debit;
+
+          // Freight rule:
+          // - If freight_paid = true -> do NOT affect balance
+          // - If freight_paid = false -> add freight to payable balance
+          const freightAmount = Number(tx.freight_amount ?? 0) || 0;
+          const freightPaid = tx.freight_paid === true;
+          if (freightAmount > 0 && !freightPaid) {
+            openingBalance += freightAmount;
+          }
         });
       }
 
@@ -282,7 +291,8 @@ export default function AccountPayableLedger() {
       return ca - cb;
     });
 
-    const rows = sorted.map((tx) => {
+    const rows: Array<any> = [];
+    sorted.forEach((tx) => {
       let debit = 0;
       let credit = 0;
 
@@ -330,13 +340,38 @@ export default function AccountPayableLedger() {
       }
 
       running = running + credit - debit;
-
-      return {
+      rows.push({
         ...tx,
+        rowKind: "main",
         debit,
         credit,
         balance: running,
-      };
+      });
+
+      const freightAmount = Number((tx as any).freight_amount ?? 0) || 0;
+      const freightPaid = (tx as any).freight_paid === true;
+      if (freightAmount > 0) {
+        // Print ledger mirrors screen behavior:
+        // - unpaid freight => credit only
+        // - paid freight => debit + credit equal (net zero)
+        const freightDebit = freightPaid ? freightAmount : 0;
+        const freightCredit = freightAmount;
+        running = running + freightCredit - freightDebit;
+        rows.push({
+          ...tx,
+          id: `${tx.id}-freight`,
+          rowKind: "freight",
+          date: tx.date,
+          description: freightPaid
+            ? `Freight Paid (${freightAmount.toFixed(2)})`
+            : `Freight Remaining (${freightAmount.toFixed(2)})`,
+          debit: freightDebit,
+          credit: freightCredit,
+          balance: running,
+          freight_paid: freightPaid,
+          parentId: tx.id,
+        });
+      }
     });
 
     const printContent = `
@@ -463,9 +498,12 @@ export default function AccountPayableLedger() {
             ` : rows.map((row) => `
               <tr>
                 <td>${formatDate(row.date)}</td>
-                <td>${getBookReference(row)}</td>
-                <td>${getDescription(row)}</td>
+                <td>${row.rowKind === 'freight' ? getBookReference({ ...row, id: row.parentId || row.id }) : getBookReference(row)}</td>
+                <td>${row.rowKind === 'freight' ? row.description : getDescription(row)}</td>
                 <td class="text-right">${
+                  row.rowKind === 'freight'
+                    ? (row.debit > 0 ? formatCurrency(row.debit) : "-")
+                    :
                   row.type === "purchase_return" 
                     ? (Number(row.paid_amount ?? 0) || 0) === 0 
                       ? "-" 
@@ -473,6 +511,9 @@ export default function AccountPayableLedger() {
                     : row.debit > 0 ? formatCurrency(row.debit) : "-"
                 }</td>
                 <td class="text-right">${
+                  row.rowKind === 'freight'
+                    ? (row.credit > 0 ? formatCurrency(row.credit) : "-")
+                    :
                   row.type === "purchase_return" 
                     ? (Number(row.total_amount ?? 0) || 0) === 0 
                       ? "-" 

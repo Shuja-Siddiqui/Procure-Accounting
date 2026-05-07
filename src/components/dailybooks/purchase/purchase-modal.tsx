@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -623,6 +624,8 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
       description: "",
       mode_of_payment: "bank_transfer",
       paid_amount: "",
+      freight_amount: "0.00",
+      freight_paid: false,
       remaining_payment: "0.00",
       date: new Date().toISOString().split('T')[0],
       purchase_invoice_number: "",
@@ -654,6 +657,15 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
   const [pendingProductsPayload, setPendingProductsPayload] = useState<any[]>([]);
   const [pendingDisplayItems, setPendingDisplayItems] = useState<PurchaseItem[]>([]);
 
+  const calculateRemainingWithFreight = (
+    baseTotal: number,
+    paidAmount: number,
+    freightAmount: number,
+    freightPaid: boolean
+  ) => {
+    return (baseTotal - paidAmount) + (freightPaid ? 0 : freightAmount);
+  };
+
   // Reset dependent state when account payable changes
   useEffect(() => {
     setPurchaseItems([]);
@@ -665,10 +677,12 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
   const createPurchaseWithProductsMutation = useMutation({
     mutationFn: (data: { transaction: InsertTransaction; products: any[] }) => 
       apiRequest('POST', '/api/transactions/purchase-with-products', data),
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       // Invalidate all relevant queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions', 'purchase'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/stats', 'purchase'] });
       queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/accounts/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transaction-product-junctions'] });
@@ -708,6 +722,10 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
       queryClient.invalidateQueries({ queryKey: ['/api/account-payables/stats'] });
       
       // /api/payables routes removed - use /api/transactions instead
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/transactions', 'purchase'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['/api/transactions/stats', 'purchase'], type: 'active' }),
+      ]);
       
       toast({
         title: "Success",
@@ -721,6 +739,8 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
         description: "",
         mode_of_payment: "cash",
         paid_amount: "0.00",
+        freight_amount: "0.00",
+        freight_paid: false,
         remaining_payment: "0.00",
         date: new Date().toISOString().split('T')[0],
         purchase_invoice_number: "",
@@ -827,12 +847,22 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
     // Convert date to proper format for database
     // Ensure paid_amount defaults to "0.00" if empty or not provided
     const paidAmount = data.paid_amount?.trim() || "0.00";
+    const freightAmount = data.freight_amount?.trim() || "0.00";
+    const freightPaid = data.freight_paid === true;
+    const finalRemaining = calculateRemainingWithFreight(
+      calculatedTotal,
+      parseFloat(paidAmount || "0") || 0,
+      parseFloat(freightAmount || "0") || 0,
+      freightPaid
+    );
     
     const processedData: InsertTransaction = {
       ...data,
       type: "purchase" as const, // Backend will override type based on paid_amount, but keep for validation
       date: data.date ? new Date(data.date).toISOString() : undefined,
       paid_amount: paidAmount, // Default to "0.00" if empty
+      freight_amount: freightAmount,
+      freight_paid: freightPaid,
     };
     
     // Convert empty strings to null for foreign key fields
@@ -854,7 +884,7 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
 
     // Use the calculated total
     processedData.total_amount = calculatedTotal.toFixed(2);
-    processedData.remaining_payment = remainingPayment.toFixed(2);
+    processedData.remaining_payment = finalRemaining.toFixed(2);
     // remaining_payment is already set above
     // Add user_id (NEW)
     if (user?.id) {
@@ -975,7 +1005,9 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
     // Calculate remaining payment
     // Allow negative values for overpayments (handled by backend)
     const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
-    const remaining = total - enteredAmount;
+    const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+    const freightPaid = form.getValues('freight_paid') === true;
+    const remaining = calculateRemainingWithFreight(total, enteredAmount, freightAmount, freightPaid);
     setRemainingPayment(remaining);
     form.setValue('remaining_payment', remaining.toFixed(2));
   }, [purchaseItems, form]);
@@ -984,10 +1016,12 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
   // Allow negative values for overpayments (handled by backend)
   useEffect(() => {
     const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
-    const remaining = calculatedTotal - enteredAmount;
+    const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+    const freightPaid = form.getValues('freight_paid') === true;
+    const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
     setRemainingPayment(remaining);
     form.setValue('remaining_payment', remaining.toFixed(2));
-  }, [form.watch('paid_amount'), calculatedTotal, form]);
+  }, [form.watch('paid_amount'), form.watch('freight_amount'), form.watch('freight_paid'), calculatedTotal, form]);
 
   // Get product IDs from purchase items
   const selectedProductIds = purchaseItems.map(item => item.product_id).filter(Boolean);
@@ -1017,6 +1051,8 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
         description: "",
         mode_of_payment: "cash",
         paid_amount: "",
+        freight_amount: "0.00",
+        freight_paid: false,
         remaining_payment: "0.00",
         date: new Date().toISOString().split('T')[0],
         purchase_invoice_number: "",
@@ -1230,6 +1266,69 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
               />
             </div>
 
+            {/* Freight section (full width) */}
+            <div className="w-full rounded-md border p-4 space-y-3">
+              <FormField
+                control={form.control}
+                name="freight_paid"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <FormLabel className="text-sm font-medium mb-0">Freight Paid</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => {
+                          const isPaid = checked === true;
+                          field.onChange(isPaid);
+                          const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
+                          const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+                          const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, isPaid);
+                          setRemainingPayment(remaining);
+                          form.setValue('remaining_payment', remaining.toFixed(2));
+                        }}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="freight_amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Freight Amount</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          value = value.replace(/[^0-9.]/g, '');
+                          const parts = value.split('.');
+                          if (parts.length > 2) {
+                            value = `${parts[0]}.${parts.slice(1).join('')}`;
+                          }
+                          if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
+                            value = value.replace(/^0+/, '');
+                          }
+                          field.onChange(value);
+                          const enteredAmount = parseFloat(form.getValues('paid_amount') || '0');
+                          const freightAmount = parseFloat(value || '0') || 0;
+                          const freightPaid = form.getValues('freight_paid') === true;
+                          const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
+                          setRemainingPayment(remaining);
+                          form.setValue('remaining_payment', remaining.toFixed(2));
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             {/* Paid Amount (Advance Payment) and From Account */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
@@ -1257,7 +1356,9 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
                           }
                           field.onChange(value);
                           const enteredAmount = parseFloat(value || '0') || 0;
-                          const remaining = calculatedTotal - enteredAmount;
+                          const freightAmount = parseFloat(form.getValues('freight_amount') || '0');
+                          const freightPaid = form.getValues('freight_paid') === true;
+                          const remaining = calculateRemainingWithFreight(calculatedTotal, enteredAmount, freightAmount, freightPaid);
                           setRemainingPayment(remaining);
                           form.setValue('remaining_payment', remaining.toFixed(2));
                           
@@ -1322,6 +1423,8 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
                     description: "",
                     mode_of_payment: "cash",
                     paid_amount: "0.00",
+                    freight_amount: "0.00",
+                    freight_paid: false,
                     remaining_payment: "0.00",
                     date: new Date().toISOString().split('T')[0],
                     source_account_id: "",
@@ -1420,7 +1523,7 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
           </div>
 
           {/* Totals */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground">Total</p>
               <p className="font-semibold">
@@ -1431,6 +1534,13 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }: PurchaseModalProps
               <p className="text-muted-foreground">Paid</p>
               <p className="font-semibold">
                 {pendingTransaction?.paid_amount || '0.00'}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Freight</p>
+              <p className="font-semibold">
+                {pendingTransaction?.freight_amount || '0.00'}
+                {pendingTransaction?.freight_paid ? ' (paid)' : ' (unpaid)'}
               </p>
             </div>
             <div>
