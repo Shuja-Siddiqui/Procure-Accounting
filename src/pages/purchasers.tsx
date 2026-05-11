@@ -237,8 +237,8 @@ export default function PurchasersPage() {
                   <SelectContent>
                     <SelectItem value="all">All Cities</SelectItem>
                     {stats.cityBreakdown.map((city) => (
-                      <SelectItem key={city.city} value={city.city}>
-                        {city.city} ({city.count})
+                      <SelectItem key={city.city || "__no_city__"} value={city.city || "unknown"}>
+                        {city.city || "Unknown"} ({city.count})
                       </SelectItem>
                     ))}
                   </SelectContent>
